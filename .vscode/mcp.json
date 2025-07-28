@@ -40,14 +40,6 @@
                 "--workspace",
                 "/Users/tom/code/rust_expts/egui_kittest"
             ]
-        },
-
-        "git-mcp": {
-            "command": "uvx",
-            "args": ["git-mcp"],
-            "env": {
-                "GIT_REPOS_PATH": "/Users/tom/code/rust_expts"
-            }
         }
     }
 }
