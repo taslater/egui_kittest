@@ -1,0 +1,53 @@
+{
+    "inputs": [],
+    "servers": {
+        "time": {
+            "command": "uvx",
+            "args": ["mcp-server-time", "--local-timezone=America/New_York"],
+            "type": "stdio"
+        },
+        "sequential-thinking": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+            "type": "stdio"
+        },
+        "playwright": {
+            "command": "npx",
+            "args": ["-y", "@playwright/mcp@latest"],
+            "type": "stdio"
+        },
+        "memory": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-memory"],
+            "type": "stdio"
+        },
+        "calculator": {
+            "command": "uvx",
+            "args": ["mcp-server-calculator"],
+            "type": "stdio"
+        },
+        "context7": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@upstash/context7-mcp@latest"]
+        },
+        "rust-mcp-server": {
+            "type": "stdio",
+            "command": "/Users/tom/code/external/rust-mcp-server/target/release/rust-mcp-server",
+            "args": [
+                "--log-file",
+                "/Users/tom/code/external/rust-mcp-server/logs/rust-mcp-server.log",
+                "--workspace",
+                "/Users/tom/code/rust_expts/egui_kittest"
+            ]
+        },
+
+        "git-mcp": {
+            "command": "uvx",
+            "args": ["git-mcp"],
+            "env": {
+                "GIT_REPOS_PATH": "/Users/tom/code/rust_expts"
+            }
+        }
+    }
+}
