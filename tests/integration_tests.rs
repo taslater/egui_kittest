@@ -24,7 +24,7 @@ fn test_button_click() {
         if ui.button("Increment").clicked() {
             counter += 1;
         }
-        ui.label(format!("Count: {}", counter));
+        ui.label(format!("Count: {counter}"));
     });
 
     // Initially counter should be 0
@@ -45,17 +45,17 @@ fn test_text_input() {
     let mut harness = Harness::new_ui(|ui| {
         let mut text = String::from("Initial");
         ui.text_edit_singleline(&mut text);
-        ui.label(format!("Text: {}", text));
+        ui.label(format!("Text: {text}"));
     });
 
     // Find the text input by role and verify it exists
     let _text_edit = harness.get_by_role(Role::TextInput);
 
     harness.run();
-    
+
     // Check that the text was updated - use query_all to handle duplicates
     let labels: Vec<_> = harness.query_all_by_value("Text: Initial").collect();
-    assert!(labels.len() > 0, "Should find the initial text label");
+    assert!(!labels.is_empty(), "Should find the initial text label");
 }
 
 #[test]
@@ -104,7 +104,7 @@ fn test_window_interaction() {
     });
 
     // Initially window should not be visible
-    assert!(!harness.query_by_label("This is a window").is_some());
+    assert!(harness.query_by_label("This is a window").is_none());
 
     // Click to open window
     harness.get_by_label("Open Window").click();
@@ -118,7 +118,7 @@ fn test_window_interaction() {
     harness.run();
 
     // Window should be closed again
-    assert!(!harness.query_by_label("This is a window").is_some());
+    assert!(harness.query_by_label("This is a window").is_none());
 }
 
 #[test]
@@ -127,7 +127,7 @@ fn test_drag_value() {
 
     let mut harness = Harness::new_ui(|ui| {
         ui.add(egui::DragValue::new(&mut value).range(0.0..=100.0));
-        ui.label(format!("Value: {:.1}", value));
+        ui.label(format!("Value: {value:.1}"));
     });
 
     harness.get_by_label("Value: 50.0");
@@ -168,7 +168,7 @@ fn test_menu_interaction() {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if !file_action.is_empty() {
-                ui.label(format!("Action: {}", file_action));
+                ui.label(format!("Action: {file_action}"));
             }
         });
     });

@@ -75,7 +75,7 @@ fn test_demo_app_age_input() {
 
     // Should show updated counter - use label role to avoid duplication
     let labels: Vec<_> = harness.query_all_by_value("Counter: 1").collect();
-    assert!(labels.len() > 0, "Counter should be updated to 1");
+    assert!(!labels.is_empty(), "Counter should be updated to 1");
 }
 
 #[test]
@@ -88,11 +88,11 @@ fn test_demo_app_dialog() {
     });
 
     // Dialog should not be visible initially
-    assert!(!harness.query_by_label("Confirmation").is_some());
+    assert!(harness.query_by_label("Confirmation").is_none());
     assert!(
-        !harness
+        harness
             .query_by_label("Are you sure you want to continue?")
-            .is_some()
+            .is_none()
     );
 
     // Click Show Dialog button
@@ -110,7 +110,7 @@ fn test_demo_app_dialog() {
     harness.run();
 
     // Dialog should be closed
-    assert!(!harness.query_by_label("Confirmation").is_some());
+    assert!(harness.query_by_label("Confirmation").is_none());
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn test_demo_app_dialog_no_button() {
     harness.run();
 
     // Dialog should be closed
-    assert!(!harness.query_by_label("Confirmation").is_some());
+    assert!(harness.query_by_label("Confirmation").is_none());
 }
 
 #[test]
@@ -166,7 +166,7 @@ fn test_demo_app_complete_workflow() {
 
     // Verify final state - use query_all to handle duplicates
     let counter_labels: Vec<_> = harness.query_all_by_value("Counter: 3").collect();
-    assert!(counter_labels.len() > 0, "Counter should be updated to 3"); // Test dialog workflow
+    assert!(!counter_labels.is_empty(), "Counter should be updated to 3"); // Test dialog workflow
     harness.get_by_label("Show Dialog").click();
     harness.run();
     harness.get_by_label("Confirmation");
@@ -174,6 +174,6 @@ fn test_demo_app_complete_workflow() {
     harness.run();
 
     // Dialog should be closed, other state should remain
-    assert!(!harness.query_by_label("Confirmation").is_some());
+    assert!(harness.query_by_label("Confirmation").is_none());
     harness.get_by_label("Counter: 3");
 }
