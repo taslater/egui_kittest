@@ -32,6 +32,16 @@ This project demonstrates how to use `egui_kittest` for testing egui application
 - Semantic labels used by tests:
   - `Layout: Stacked` or `Layout: Side+Central`
   - `Columns: {n}`
+  - `Scale: {n}%`, `Scale bucket: Small|Medium|Large`, `Scaling mode: Zoom|Style`
+
+### Adaptive scaling (two modes)
+
+- Zoom-based scaling (default): uses `Context::set_zoom_factor` with discrete buckets to avoid oscillations and repaint loops.
+  - < 600 → 0.85x, < 900 → 1.00x, < 1280 → 1.25x, ≥ 1280 → 1.50x
+- Style-based scaling: leaves zoom at 1.0 and scales typography/spacing from a captured baseline `Style` (idempotent) using discrete buckets.
+  - < 600 → 0.95x, < 900 → 1.15x, < 1280 → 1.35x, ≥ 1280 → 1.60x
+- Toggle via View → “Scaling strategy” (Zoom-based / Style-based). The current mode is also shown in-content as `Scaling mode: …`.
+- Breakpoints (stacking, columns, and bucket labels) use physical window width (points × pixels_per_point) so they’re stable across DPI and independent of zoom.
 
 ### Testing Features
 
@@ -42,6 +52,7 @@ This project demonstrates how to use `egui_kittest` for testing egui application
 - Window resizing in tests with `Harness::builder().with_size(..)` and `harness.set_size(..)`
 - Image snapshots at multiple sizes and `fit_contents()` flows
 - CI-friendly: stable labels; minimal, focused snapshots
+- Scaling coverage: tests assert that `Scale: …%` is non-decreasing with width, `Scale bucket` transitions at 600/900/900+ thresholds, wide geometry grows with scale, and breakpoints remain stable across scaling modes.
 
 ## Running the Application
 
@@ -152,6 +163,8 @@ Notes:
   - 360 px: stacked + 1 column
   - 820 px: side+central + 2 columns (accounts for SidePanel width)
   - 1280 px: 3 columns
+- Use physical width (points × pixels_per_point) for breakpoints so layout is stable across DPI and independent of zoom.
+- When writing tests that change scaling modes, prefer asserting the semantic `Scaling mode: …` label. For breakpoint stability across modes, you can set `app.scaling_mode` directly before building a harness for determinism.
 
 ## Example Test Structure
 

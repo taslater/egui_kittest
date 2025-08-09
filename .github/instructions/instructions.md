@@ -23,6 +23,7 @@ This repository demonstrates best practices for testing egui UIs with egui_kitte
 - Responsive layouts that adapt to narrow/medium/wide widths
 - Accessibility via AccessKit roles (queryable in tests)
 - Deterministic tests that assert behavior and visuals
+- Flexible scaling that is robust in tests (discrete buckets; no repaint loops)
 
 ## Tools you should use
 
@@ -69,6 +70,7 @@ Notes:
 
 - Keep labels and roles stable; avoid dynamic text in selectors when possible.
 - Prefer `ui.horizontal_wrapped`, `ui.columns`, and width-based branching for responsiveness.
+- For flexible scaling, prefer discrete buckets for zoom or style-based scaling to avoid oscillations and repaint loops.
 
 1. Write tests
 
@@ -78,12 +80,18 @@ Notes:
 - Keyboard & focus: call `.focus()` on the node, then `harness.key_press(..)` or `.type_text(..)`
 - Geometry checks: use `.rect()` on nodes to assert order/positions
 - Scrolling: use `.scroll_to_me()` to bring off-screen nodes into view
+- Scaling semantics:
+  - Assert `Scale: …%` is non-decreasing from narrow → medium → wide
+  - Assert `Scale bucket: Small|Medium|Large` at 360/820/1280 widths
+  - Assert `Scaling mode: Zoom|Style` is exposed and togglable via the View menu
+  - For breakpoint stability across modes, set `app.scaling_mode` directly before building a new harness at the same size and assert `Columns: …` and `Scale bucket: …` remain unchanged
 
 1. Update snapshots
 
 - First run will fail if a reference image is missing. Update by running:
 - `UPDATE_SNAPSHOTS=true cargo test` (macOS/Linux)
 - Commit only reference `.png` files; `.diff.png`/`.new.png` files are ignored.
+  - After UI semantic label changes (e.g., exposing `Scaling mode: …`), refresh snapshots.
 
 1. Quality gates (before commit/PR)
 
@@ -102,10 +110,12 @@ Notes:
 
 - Prefer semantic/geometry assertions over large snapshots
 - Use stable labels/roles; add explicit labels like `Layout: …` and `Columns: …`
+- Expose `Scale: …%`, `Scale bucket: …`, and `Scaling mode: …` so tests can assert scaling behavior without relying on visuals.
 - Test responsive behavior at representative widths:
   - 360 px: stacked + 1 column
   - 820 px: side+central + 2 columns (accounts for SidePanel width)
   - 1280 px: 3 columns
+- Make breakpoints DPI/zoom-stable by using physical width (points × pixels_per_point) rather than scaled UI width.
 - Wrap tall content in `egui::ScrollArea::vertical()` to keep items reachable at small sizes
 - Use `scroll_to_me()` to bring target nodes into view in tests
 - For DragValue/SpinButton, `.focus()` + `.type_text(..)` can set the value reliably
