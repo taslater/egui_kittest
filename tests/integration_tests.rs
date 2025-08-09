@@ -1,3 +1,4 @@
+use eframe::App;
 use egui::accesskit::Role;
 use egui_kittest::{Harness, kittest::Queryable};
 
@@ -183,4 +184,48 @@ fn test_menu_interaction() {
 
     // Check that action was recorded
     harness.get_by_label("Action: New");
+}
+
+#[test]
+fn test_semantic_layout_indicators() {
+    let mut app = egui_kittest_demo::DemoApp::new();
+
+    // Narrow: expect stacked layout and 1 column
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(360.0, 500.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+    harness.get_by_label("Layout: Stacked");
+    // Columns label should be visible and equal to 1
+    harness.get_by_label("Columns: 1");
+
+    // Medium: expect side+central and 2 columns (bump width to account for SidePanel)
+    harness.set_size(egui::vec2(820.0, 600.0));
+    harness.run();
+    harness.get_by_label("Layout: Side+Central");
+    harness.get_by_label("Columns: 2");
+
+    // Wide: expect 3 columns
+    harness.set_size(egui::vec2(1000.0, 700.0));
+    harness.run();
+    harness.get_by_label("Columns: 3");
+}
+
+#[test]
+fn test_all_cards_visible_via_scroll_narrow() {
+    let mut app = egui_kittest_demo::DemoApp::new();
+
+    let harness = Harness::builder()
+        .with_size(egui::vec2(320.0, 220.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+
+    // All card headings should be reachable even at narrow size due to ScrollArea
+    for i in 1..=6 {
+        harness.get_by_label(&format!("Card {i}"));
+    }
 }
