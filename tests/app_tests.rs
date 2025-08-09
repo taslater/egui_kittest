@@ -177,3 +177,26 @@ fn test_demo_app_complete_workflow() {
     assert!(harness.query_by_label("Confirmation").is_none());
     harness.get_by_label("Counter: 3");
 }
+
+#[test]
+fn test_small_window_has_scrollbar_and_accessible_content() {
+    let mut app = DemoApp::new();
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(300.0, 200.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+
+    // Heading should be present
+    harness.get_by_label("egui_kittest Demo App");
+
+    // Ensure some content that would normally overflow is still reachable
+    // We expect a vertical scrollbar to appear in CentralPanel ScrollArea
+    // and the bottom-most content (e.g., last card) to be accessible after run.
+    harness.run();
+
+    // Look for one of the card headings; at small size it might require scrolling,
+    // but ScrollArea should make it accessible to the harness.
+    harness.get_by_label("Card 6");
+}

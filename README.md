@@ -121,6 +121,12 @@ Add these to `.gitignore` to avoid noise from diffs/temporary images:
 - Tests demonstrate both positive and negative test cases
 - All tests are headless and don't require a display server
 
+### Best practice: make overflow content scrollable
+
+- Wrap panels that can overflow in `egui::ScrollArea::vertical()` so content remains accessible at small window sizes.
+- We added this to both the left `SidePanel` and the main `CentralPanel`.
+- A test (`test_small_window_has_scrollbar_and_accessible_content`) asserts that content at the bottom (e.g., `Card 6`) is still reachable when the window is small.
+
 ## Example Test Structure
 
 ```rust

@@ -57,6 +57,11 @@ This repository demonstrates best practices for testing egui UIs with egui_kitte
 - Tests: all features must have tests; don’t regress accessibility queries.
 - Snapshot scope: keep images small and focused; prefer logic/assert tests when possible.
 
+### UI accessibility & overflow
+
+- Always ensure overflow content is scrollable: wrap potentially tall content in `egui::ScrollArea::vertical()`.
+- Test small sizes to guarantee content remains reachable (e.g., assert bottom items are findable by label/role).
+
 ## Quick commands (through rust-mcp-server)
 
 - cargo-fmt: format all crates
