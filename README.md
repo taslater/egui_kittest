@@ -1,6 +1,6 @@
 # egui_kittest Demo
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI](https://github.com/taslater/egui_kittest/actions/workflows/ci.yml/badge.svg)](https://github.com/taslater/egui_kittest/actions/workflows/ci.yml)
 
 This project demonstrates how to use `egui_kittest` for testing egui applications. It includes a simple demo application and comprehensive tests showing various testing scenarios.
 
