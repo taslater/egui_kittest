@@ -62,6 +62,24 @@ To run tests with output:
 cargo test -- --nocapture
 ```
 
+### Image snapshots
+
+This repo enables egui_kittest's snapshot testing behind the `wgpu` and `snapshot` features.
+
+- Images are written to `tests/snapshots/` on first run.
+- To update snapshots, run with the env var:
+
+```bash
+UPDATE_SNAPSHOTS=true cargo test
+```
+
+Add these to `.gitignore` to avoid noise from diffs/temporary images:
+
+```gitignore
+**/tests/snapshots/**/*.diff.png
+**/tests/snapshots/**/*.new.png
+```
+
 ## Key egui_kittest Concepts Demonstrated
 
 ### 1. Harness Creation
