@@ -1,4 +1,5 @@
 use eframe::egui;
+use egui::emath::remap_clamp;
 
 #[derive(Default)]
 pub struct DemoApp {
@@ -6,16 +7,29 @@ pub struct DemoApp {
     pub age: u32,
     pub counter: i32,
     pub show_confirmation_dialog: bool,
+    pub zoom_factor: f32,
 }
 
 impl DemoApp {
     pub fn new() -> Self {
-        Self::default()
+        Self { zoom_factor: 1.0, ..Default::default() }
     }
 }
 
 impl eframe::App for DemoApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    // Adaptive scaling: compute a simple zoom factor from window width.
+    // Map 360px -> 0.9x, 1280px+ -> 1.15x (clamped), smooth in-between.
+        let win_width = ctx.available_rect().width();
+        let desired = remap_clamp(win_width, 360.0..=1280.0, 0.9..=1.15);
+        // Only apply if it actually changes enough to matter to avoid repaint loops.
+        let eps = 0.01;
+        if (self.zoom_factor - desired).abs() > eps {
+            self.zoom_factor = desired;
+            // Use zoom factor so we respect platform native pixels-per-point baseline.
+            ctx.set_zoom_factor(self.zoom_factor);
+        }
+
         // Top menu bar for navigation and accessibility
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
@@ -33,10 +47,11 @@ impl eframe::App for DemoApp {
             });
         });
 
-        // Determine if we should stack content for very narrow windows
-        let total_width = ctx.available_rect().width();
-        let stack_breakpoint = 600.0_f32; // below this, stack filters above content
-        let is_stacked = total_width < stack_breakpoint;
+    // Determine if we should stack content for very narrow windows
+    let total_width = ctx.available_rect().width();
+    let stack_breakpoint = 600.0_f32; // below this, stack filters above content
+    // Normalize by zoom so breakpoints are stable regardless of zoom
+    let is_stacked = (total_width / self.zoom_factor) < stack_breakpoint;
 
         // Shared closures to render filters and main content to avoid duplication
         let render_filters = |ui: &mut egui::Ui| {
@@ -55,6 +70,17 @@ impl eframe::App for DemoApp {
                     "Layout: {}",
                     if stacked { "Stacked" } else { "Side+Central" }
                 ));
+                // Expose semantic scale indicators for tests and a11y
+                let scale_pct = (this.zoom_factor * 100.0).round() as i32;
+                ui.label(format!("Scale: {scale_pct}%"));
+                let bucket = if total_width >= 900.0 {
+                    "Large"
+                } else if total_width >= 600.0 {
+                    "Medium"
+                } else {
+                    "Small"
+                };
+                ui.label(format!("Scale bucket: {bucket}"));
 
                 // Form area – stacks on small widths
                 let available_width = ui.available_width();
@@ -123,8 +149,8 @@ impl eframe::App for DemoApp {
 
                 ui.separator();
 
-                // Responsive card grid – adapts number of columns to width
-                let width = ui.available_width();
+                // Responsive card grid – adapts number of columns to central width (normalized)
+                let width = total_width;
                 let cols = if width >= 900.0 {
                     3
                 } else if width >= 600.0 {

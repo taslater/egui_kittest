@@ -214,6 +214,101 @@ fn test_semantic_layout_indicators() {
 }
 
 #[test]
+fn test_adaptive_scaling_labels_and_progression() {
+    let mut app = egui_kittest_demo::DemoApp::new();
+
+    // Small width
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(360.0, 500.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+    let small_scale = harness.get_by_label_contains("Scale: ");
+    let small_text = small_scale
+        .value()
+        .expect("Scale label should expose its text value");
+
+    // Medium width
+    harness.set_size(egui::vec2(820.0, 600.0));
+    harness.run();
+    let medium_scale = harness.get_by_label_contains("Scale: ");
+    let medium_text = medium_scale
+        .value()
+        .expect("Scale label should expose its text value");
+
+    // Wide width
+    harness.set_size(egui::vec2(1280.0, 700.0));
+    harness.run();
+    let wide_scale = harness.get_by_label_contains("Scale: ");
+    let wide_text = wide_scale
+        .value()
+        .expect("Scale label should expose its text value");
+
+    // Helper to parse "Scale: 105%"
+    fn parse_percent(s: &str) -> i32 {
+        s.split(':')
+            .nth(1)
+            .and_then(|t| t.trim().strip_suffix('%').map(|p| p.trim()))
+            .and_then(|p| p.parse::<i32>().ok())
+            .unwrap()
+    }
+
+    let small = parse_percent(&small_text);
+    let medium = parse_percent(&medium_text);
+    let wide = parse_percent(&wide_text);
+
+    assert!(small <= medium && medium <= wide, "scale should be non-decreasing with width: {small} <= {medium} <= {wide}");
+
+    // Also validate scale bucket labels exist at each size
+    harness.get_by_label_contains("Scale bucket: ");
+}
+
+#[test]
+fn test_scale_bucket_across_breakpoints() {
+    let mut app = egui_kittest_demo::DemoApp::new();
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(360.0, 500.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+    harness.get_by_label("Scale bucket: Small");
+
+    harness.set_size(egui::vec2(820.0, 600.0));
+    harness.run();
+    harness.get_by_label("Scale bucket: Medium");
+
+    harness.set_size(egui::vec2(1280.0, 700.0));
+    harness.run();
+    harness.get_by_label("Scale bucket: Large");
+}
+
+#[test]
+fn test_text_scaling_affects_geometry() {
+    let mut app = egui_kittest_demo::DemoApp::new();
+
+    // Small window
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(360.0, 320.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+    let heading_small = harness.get_by_label("egui_kittest Demo App");
+    let h_small = heading_small.rect().height();
+
+    // Wide window
+    harness.set_size(egui::vec2(1280.0, 720.0));
+    harness.run();
+    let heading_wide = harness.get_by_label("egui_kittest Demo App");
+    let h_wide = heading_wide.rect().height();
+
+    // Expect some increase due to higher zoom at wide sizes
+    assert!(h_wide >= h_small + 1.0, "heading height should increase with scale: small={h_small}, wide={h_wide}");
+}
+
+#[test]
 fn test_all_cards_visible_via_scroll_narrow() {
     let mut app = egui_kittest_demo::DemoApp::new();
 
