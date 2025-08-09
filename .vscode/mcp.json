@@ -33,6 +33,14 @@
                 "--workspace",
                 "/Users/tom/code/rust_expts/egui_kittest"
             ]
+        },
+        "git": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-git",
+                "--repository",
+                "/Users/tom/code/rust_expts/egui_kittest/.git"
+            ]
         }
     }
 }
