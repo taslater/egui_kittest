@@ -19,19 +19,19 @@ This project demonstrates how to use `egui_kittest` for testing egui application
 ### Demo Application Features
 
 - Responsive layout:
-    - Wide: resizable SidePanel + CentralPanel
-    - Narrow (< 600 px): stacked layout
+  - Wide: resizable SidePanel + CentralPanel
+  - Narrow (< 600 px): stacked layout
 - Overflow-safe: left and central content are wrapped in `ScrollArea::vertical`
 - Adaptive grid of “Card” items with column thresholds:
-    - width >= 900 → 3 columns
-    - width >= 600 → 2 columns
-    - else → 1 column
+  - width >= 900 → 3 columns
+  - width >= 600 → 2 columns
+  - else → 1 column
 - Form: name (TextInput) and age (SpinButton via DragValue)
 - Counter with increment/decrement
 - Modal dialog with Yes/No
 - Semantic labels used by tests:
-    - `Layout: Stacked` or `Layout: Side+Central`
-    - `Columns: {n}`
+  - `Layout: Stacked` or `Layout: Side+Central`
+  - `Columns: {n}`
 
 ### Testing Features
 
@@ -149,9 +149,9 @@ Notes:
 - Use stable, semantic labels (e.g., `Layout: …`, `Columns: …`) to make tests robust.
 - Prefer semantic/geometry assertions over large snapshots; keep images minimal and focused.
 - Test responsive behavior at representative widths:
-    - 360 px: stacked + 1 column
-    - 820 px: side+central + 2 columns (accounts for SidePanel width)
-    - 1280 px: 3 columns
+  - 360 px: stacked + 1 column
+  - 820 px: side+central + 2 columns (accounts for SidePanel width)
+  - 1280 px: 3 columns
 
 ## Example Test Structure
 
