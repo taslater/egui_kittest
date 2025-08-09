@@ -144,6 +144,13 @@ impl eframe::App for DemoApp {
                 // Expose semantic scale indicators for tests and a11y
                 let scale_pct = (this.zoom_factor * 100.0).round() as i32;
                 ui.label(format!("Scale: {scale_pct}%"));
+                ui.label(format!(
+                    "Scaling mode: {}",
+                    match this.scaling_mode {
+                        ScalingMode::Zoom => "Zoom",
+                        ScalingMode::Style => "Style",
+                    }
+                ));
                 let bucket = if logical_width >= 900.0 {
                     "Large"
                 } else if logical_width >= 600.0 {

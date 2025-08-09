@@ -324,3 +324,54 @@ fn test_all_cards_visible_via_scroll_narrow() {
         harness.get_by_label(&format!("Card {i}"));
     }
 }
+
+// Scaling: toggling the View -> Style-based mode should reflect in the semantic label
+#[test]
+fn test_view_menu_scaling_mode_toggle() {
+    let mut app = egui_kittest_demo::DemoApp::new();
+    let mut harness = Harness::builder()
+        .with_size(egui::vec2(820.0, 600.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+
+    // Open the View menu and toggle to Style-based
+    harness.get_by_label("View").click();
+    harness.run();
+    harness.get_by_label("Style-based").click();
+    harness.run();
+
+    // Confirm the scaling mode label updates
+    harness.get_by_label("Scaling mode: Style");
+    // Scale label should still be present
+    harness.get_by_label_contains("Scale: ");
+}
+
+// Scaling: breakpoints (columns, bucket) must be stable across scaling modes at the same width
+#[test]
+fn test_columns_and_bucket_stable_across_modes() {
+    // First, check in default (Zoom) mode at wide width
+    let mut app = egui_kittest_demo::DemoApp::new();
+    {
+        let harness = Harness::builder()
+        .with_size(egui::vec2(1280.0, 720.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+        harness.get_by_label("Columns: 3");
+        harness.get_by_label("Scale bucket: Large");
+    }
+
+    // Now set Style mode directly and rebuild to avoid menu access flakiness
+    app.scaling_mode = egui_kittest_demo::ScalingMode::Style;
+    let harness2 = Harness::builder()
+        .with_size(egui::vec2(1280.0, 720.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+    harness2.get_by_label("Columns: 3");
+    harness2.get_by_label("Scale bucket: Large");
+}
