@@ -1,5 +1,16 @@
 use eframe::egui;
-use egui::emath::remap_clamp;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ScalingMode {
+    Zoom,
+    Style,
+}
+
+impl Default for ScalingMode {
+    fn default() -> Self {
+        ScalingMode::Zoom
+    }
+}
 
 #[derive(Default)]
 pub struct DemoApp {
@@ -8,26 +19,69 @@ pub struct DemoApp {
     pub counter: i32,
     pub show_confirmation_dialog: bool,
     pub zoom_factor: f32,
+    pub scaling_mode: ScalingMode,
+    pub base_style: Option<egui::Style>,
 }
 
 impl DemoApp {
     pub fn new() -> Self {
-        Self { zoom_factor: 1.0, ..Default::default() }
+    Self { zoom_factor: 1.0, scaling_mode: ScalingMode::default(), base_style: None, ..Default::default() }
     }
 }
 
 impl eframe::App for DemoApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-    // Adaptive scaling: compute a simple zoom factor from window width.
-    // Map 360px -> 0.9x, 1280px+ -> 1.15x (clamped), smooth in-between.
-        let win_width = ctx.available_rect().width();
-        let desired = remap_clamp(win_width, 360.0..=1280.0, 0.9..=1.15);
-        // Only apply if it actually changes enough to matter to avoid repaint loops.
-        let eps = 0.01;
-        if (self.zoom_factor - desired).abs() > eps {
-            self.zoom_factor = desired;
-            // Use zoom factor so we respect platform native pixels-per-point baseline.
-            ctx.set_zoom_factor(self.zoom_factor);
+        // Capture baseline style once for style-based scaling
+        if self.base_style.is_none() {
+            self.base_style = Some((*ctx.style()).clone());
+        }
+
+    // Measure unscaled window width (in points) and base pixels-per-point once per frame
+    // Use physical width (points * ppp) for stable, DPI-independent breakpoints
+    let unscaled_points = ctx.available_rect().width();
+    let base_ppp = ctx.pixels_per_point();
+    let window_px = unscaled_points * base_ppp;
+    // Adaptive scaling based directly on current window width
+    let win_width = window_px;
+    match self.scaling_mode {
+            ScalingMode::Zoom => {
+        // Discrete, stronger zoom mapping to avoid oscillations
+        let desired = if win_width < 600.0 { 0.85 } else if win_width < 900.0 { 1.0 } else if win_width < 1280.0 { 1.25 } else { 1.50 };
+                let eps = 0.01;
+                if (self.zoom_factor - desired).abs() > eps {
+                    self.zoom_factor = desired;
+                    ctx.set_zoom_factor(self.zoom_factor);
+                }
+            }
+            ScalingMode::Style => {
+        // Style-driven discrete scaling (typography + spacing), leave zoom at 1.0
+        let style_scale = if win_width < 600.0 { 0.95 } else if win_width < 900.0 { 1.15 } else if win_width < 1280.0 { 1.35 } else { 1.60 };
+                // Apply only if meaningfully changed
+                let eps = 0.01;
+                // Track zoom_factor as the effective visual scale for labeling
+                if (self.zoom_factor - style_scale).abs() > eps {
+                    self.zoom_factor = style_scale;
+                    // Build from baseline style so scaling is idempotent
+                    let mut style = self.base_style.clone().unwrap_or_else(|| (*ctx.style()).clone());
+                    let base = style.clone();
+                    // Scale common spacings from base
+                    style.spacing.item_spacing = base.spacing.item_spacing * style_scale;
+                    style.spacing.button_padding = base.spacing.button_padding * style_scale;
+                    style.spacing.indent = base.spacing.indent * style_scale;
+                    style.spacing.interact_size = base.spacing.interact_size * style_scale;
+                    // Scale text styles from base
+                    for (ts, font_id) in style.text_styles.iter_mut() {
+                        if let Some(base_font) = base.text_styles.get(ts) {
+                            font_id.size = base_font.size * style_scale;
+                        } else {
+                            font_id.size *= style_scale;
+                        }
+                    }
+                    ctx.set_style(style);
+                    // Ensure base zoom (pixels_per_point multiplier) is neutral in this mode
+                    ctx.set_zoom_factor(1.0);
+                }
+            }
         }
 
         // Top menu bar for navigation and accessibility
@@ -40,6 +94,23 @@ impl eframe::App for DemoApp {
                 });
                 ui.menu_button("View", |ui| {
                     ui.label("Layout is responsive to window width");
+                    ui.separator();
+                    ui.label("Scaling strategy");
+                    let mut mode = self.scaling_mode;
+                    if ui.radio(mode == ScalingMode::Zoom, "Zoom-based").clicked() {
+                        mode = ScalingMode::Zoom;
+                    }
+                    if ui.radio(mode == ScalingMode::Style, "Style-based").clicked() {
+                        mode = ScalingMode::Style;
+                    }
+                    if mode != self.scaling_mode {
+                        self.scaling_mode = mode;
+                        // Reset to force re-application next frame
+                        self.zoom_factor = 0.0;
+                    }
+                    ui.label(format!("Scaling mode: {}",
+                        match self.scaling_mode { ScalingMode::Zoom => "Zoom", ScalingMode::Style => "Style" }
+                    ));
                 });
                 ui.menu_button("Help", |ui| {
                     ui.label("Demo showing responsive layouts");
@@ -48,10 +119,10 @@ impl eframe::App for DemoApp {
         });
 
     // Determine if we should stack content for very narrow windows
-    let total_width = ctx.available_rect().width();
+    // Base this on the physical window width so breakpoints are stable across DPI & zoom
     let stack_breakpoint = 600.0_f32; // below this, stack filters above content
-    // Normalize by zoom so breakpoints are stable regardless of zoom
-    let is_stacked = (total_width / self.zoom_factor) < stack_breakpoint;
+    let logical_width = window_px;
+    let is_stacked = logical_width < stack_breakpoint;
 
         // Shared closures to render filters and main content to avoid duplication
         let render_filters = |ui: &mut egui::Ui| {
@@ -73,9 +144,9 @@ impl eframe::App for DemoApp {
                 // Expose semantic scale indicators for tests and a11y
                 let scale_pct = (this.zoom_factor * 100.0).round() as i32;
                 ui.label(format!("Scale: {scale_pct}%"));
-                let bucket = if total_width >= 900.0 {
+                let bucket = if logical_width >= 900.0 {
                     "Large"
-                } else if total_width >= 600.0 {
+                } else if logical_width >= 600.0 {
                     "Medium"
                 } else {
                     "Small"
@@ -149,8 +220,8 @@ impl eframe::App for DemoApp {
 
                 ui.separator();
 
-                // Responsive card grid – adapts number of columns to central width (normalized)
-                let width = total_width;
+                // Responsive card grid – adapts number of columns to central width (stable vs zoom)
+                let width = logical_width;
                 let cols = if width >= 900.0 {
                     3
                 } else if width >= 600.0 {
