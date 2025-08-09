@@ -208,7 +208,7 @@ fn test_semantic_layout_indicators() {
     harness.get_by_label("Columns: 2");
 
     // Wide: expect 3 columns
-    harness.set_size(egui::vec2(1000.0, 700.0));
+    harness.set_size(egui::vec2(1280.0, 700.0));
     harness.run();
     harness.get_by_label("Columns: 3");
 }
