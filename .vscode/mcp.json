@@ -11,25 +11,18 @@
             "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
             "type": "stdio"
         },
-        "playwright": {
-            "command": "npx",
-            "args": ["-y", "@playwright/mcp@latest"],
-            "type": "stdio"
-        },
         "memory": {
             "command": "npx",
             "args": ["-y", "@modelcontextprotocol/server-memory"],
+            "env": {
+                "MEMORY_FILE_PATH": "/Users/tom/code/rust_expts/egui_kittest/.vscode/memory.json"
+            },
             "type": "stdio"
         },
         "calculator": {
             "command": "uvx",
             "args": ["mcp-server-calculator"],
             "type": "stdio"
-        },
-        "context7": {
-            "type": "stdio",
-            "command": "npx",
-            "args": ["-y", "@upstash/context7-mcp@latest"]
         },
         "rust-mcp-server": {
             "type": "stdio",
