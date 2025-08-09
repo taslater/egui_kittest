@@ -11,14 +11,16 @@ This project demonstrates how to use `egui_kittest` for testing egui application
 
 ## Features Demonstrated
 
-### Demo Application Features:
+### Demo Application Features
+
 - Text input for name
 - Numeric input for age using DragValue
 - Counter with increment/decrement buttons
 - Modal dialog with confirmation buttons
 - Dynamic labels showing current state
 
-### Testing Features:
+### Testing Features
+
 - Basic UI element presence testing
 - Button click simulation
 - Text input testing
@@ -63,19 +65,23 @@ cargo test -- --nocapture
 ## Key egui_kittest Concepts Demonstrated
 
 ### 1. Harness Creation
+
 - `Harness::new_ui()` - For testing UI closures
 - `Harness::new()` - For testing full egui contexts
 
 ### 2. Element Selection
+
 - `get_by_name()` - Find elements by their text/name
 - `query_by_name()` - Check if elements exist without panicking
 
 ### 3. Interactions
+
 - `.click()` - Simulate button clicks
 - `.type_text()` - Type text into inputs
 - `.set_text()` - Set text directly
 
 ### 4. Test Patterns
+
 - Frame stepping with `harness.run()`
 - State verification between interactions
 - Dialog/window lifecycle testing
