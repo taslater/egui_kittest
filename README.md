@@ -2,35 +2,46 @@
 
 [![CI](https://github.com/taslater/egui_kittest/actions/workflows/ci.yml/badge.svg)](https://github.com/taslater/egui_kittest/actions/workflows/ci.yml)
 
-This project demonstrates how to use `egui_kittest` for testing egui applications. It includes a simple demo application and comprehensive tests showing various testing scenarios.
+This project demonstrates how to use `egui_kittest` for testing egui applications. It includes a responsive demo app and comprehensive tests across semantic, geometry, and snapshot styles.
 
 ## Project Structure
 
-- `src/lib.rs` - The main demo application (`DemoApp`) that can be tested
-- `src/main.rs` - Binary entry point to run the demo application
-- `tests/integration_tests.rs` - Basic egui_kittest functionality tests
-- `tests/app_tests.rs` - Tests specifically for the DemoApp
+- `src/lib.rs` – The demo application (`DemoApp`) with responsive layout
+- `src/main.rs` – Binary entry point to run the demo
+- `tests/app_tests.rs` – App-focused functional tests (inputs, dialogs, scrolling)
+- `tests/integration_tests.rs` – Wider interaction and responsive assertions
+- `tests/snapshot_tests.rs` – Narrow/medium/wide snapshots + fit_contents
+- `tests/a11y_keyboard_tests.rs` – Accessibility/keyboard, geometry, scroll-to-view
+- `tests/snapshots/` – Snapshot reference images
 
 ## Features Demonstrated
 
 ### Demo Application Features
 
-- Text input for name
-- Numeric input for age using DragValue
-- Counter with increment/decrement buttons
-- Modal dialog with confirmation buttons
-- Dynamic labels showing current state
+- Responsive layout:
+    - Wide: resizable SidePanel + CentralPanel
+    - Narrow (< 600 px): stacked layout
+- Overflow-safe: left and central content are wrapped in `ScrollArea::vertical`
+- Adaptive grid of “Card” items with column thresholds:
+    - width >= 900 → 3 columns
+    - width >= 600 → 2 columns
+    - else → 1 column
+- Form: name (TextInput) and age (SpinButton via DragValue)
+- Counter with increment/decrement
+- Modal dialog with Yes/No
+- Semantic labels used by tests:
+    - `Layout: Stacked` or `Layout: Side+Central`
+    - `Columns: {n}`
 
 ### Testing Features
 
-- Basic UI element presence testing
-- Button click simulation
-- Text input testing
-- Checkbox interaction
-- Window/dialog testing
-- Menu interaction
-- Drag value testing
-- Complete application workflow testing
+- Semantic queries with AccessKit roles and labels: `get_by_role`, `get_by_label`, `get_by_value`
+- Keyboard/focus interactions: `.focus()`, `harness.key_press`, `.type_text()`
+- Geometry checks using `.rect()` to assert layout order/positions
+- Scroll reachability: `scroll_to_me()` to bring off-screen content into view
+- Window resizing in tests with `Harness::builder().with_size(..)` and `harness.set_size(..)`
+- Image snapshots at multiple sizes and `fit_contents()` flows
+- CI-friendly: stable labels; minimal, focused snapshots
 
 ## Running the Application
 
@@ -56,6 +67,9 @@ cargo test --test integration_tests
 
 # Run app-specific tests
 cargo test --test app_tests
+
+# Run accessibility/keyboard tests
+cargo test --test a11y_keyboard_tests
 ```
 
 To run tests with output:
@@ -82,6 +96,11 @@ Add these to `.gitignore` to avoid noise from diffs/temporary images:
 **/tests/snapshots/**/*.new.png
 ```
 
+Notes:
+
+- Snapshots can differ by OS/driver. Our CI runs snapshot steps on macOS and skips them on Linux.
+- Prefer semantic and geometry assertions for behavior; keep snapshots small and stable.
+
 ## Key egui_kittest Concepts Demonstrated
 
 ### 1. Harness Creation
@@ -91,14 +110,16 @@ Add these to `.gitignore` to avoid noise from diffs/temporary images:
 
 ### 2. Element Selection
 
-- `get_by_name()` - Find elements by their text/name
-- `query_by_name()` - Check if elements exist without panicking
+- `get_by_label()` / `query_by_label()` – by exact label text
+- `get_by_role()` / `query_by_role()` – by AccessKit role
+- `get_by_value()` / `query_by_value()` – by value text
 
 ### 3. Interactions
 
-- `.click()` - Simulate button clicks
-- `.type_text()` - Type text into inputs
-- `.set_text()` - Set text directly
+- `.click()` – Simulate button clicks
+- `.focus()` and `.type_text()` – Keyboard input into fields
+- `harness.key_press(..)` – Simulate key presses
+- `.scroll_to_me()` – Ensure off-screen nodes are brought into view
 
 ### 4. Test Patterns
 
@@ -109,10 +130,10 @@ Add these to `.gitignore` to avoid noise from diffs/temporary images:
 
 ## Dependencies
 
-- `egui` - The immediate mode GUI framework
-- `eframe` - Application framework for egui
-- `egui_kittest` - Testing framework for egui applications
-- `tokio` - Async runtime (for test infrastructure)
+- `egui` – The immediate mode GUI framework
+- `eframe` – Application framework for egui
+- `egui_kittest` – Testing framework for egui applications
+- `tokio` – Async runtime (for some tests)
 
 ## Notes
 
@@ -121,11 +142,16 @@ Add these to `.gitignore` to avoid noise from diffs/temporary images:
 - Tests demonstrate both positive and negative test cases
 - All tests are headless and don't require a display server
 
-### Best practice: make overflow content scrollable
+### Best practices (from this repo)
 
-- Wrap panels that can overflow in `egui::ScrollArea::vertical()` so content remains accessible at small window sizes.
-- We added this to both the left `SidePanel` and the main `CentralPanel`.
-- A test (`test_small_window_has_scrollbar_and_accessible_content`) asserts that content at the bottom (e.g., `Card 6`) is still reachable when the window is small.
+- Make overflow content scrollable with `egui::ScrollArea::vertical()`.
+- Account for side panels when asserting grid column counts; central width is less than window width.
+- Use stable, semantic labels (e.g., `Layout: …`, `Columns: …`) to make tests robust.
+- Prefer semantic/geometry assertions over large snapshots; keep images minimal and focused.
+- Test responsive behavior at representative widths:
+    - 360 px: stacked + 1 column
+    - 820 px: side+central + 2 columns (accounts for SidePanel width)
+    - 1280 px: 3 columns
 
 ## Example Test Structure
 
@@ -140,11 +166,11 @@ fn test_example() {
     });
 
     // Test interactions
-    harness.get_by_name("Click me").click();
+    harness.get_by_label("Click me").click();
     harness.run();
     
     // Verify results
-    harness.get_by_name("Expected result");
+    harness.get_by_label("Expected result");
 }
 ```
 
