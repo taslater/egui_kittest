@@ -48,113 +48,119 @@ impl eframe::App for DemoApp {
             ui.label("Use the central area to interact with the app");
         };
 
-        let render_main_content = |ui: &mut egui::Ui, this: &mut DemoApp, ctx: &egui::Context| {
-            ui.heading("egui_kittest Demo App");
+        let render_main_content =
+            |ui: &mut egui::Ui, this: &mut DemoApp, ctx: &egui::Context, stacked: bool| {
+                ui.heading("egui_kittest Demo App");
+                ui.label(format!(
+                    "Layout: {}",
+                    if stacked { "Stacked" } else { "Side+Central" }
+                ));
 
-            // Form area – stacks on small widths
-            let available_width = ui.available_width();
-            let is_narrow = available_width < 500.0;
-            if is_narrow {
-                ui.vertical(|ui| {
+                // Form area – stacks on small widths
+                let available_width = ui.available_width();
+                let is_narrow = available_width < 500.0;
+                if is_narrow {
+                    ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Name:");
+                            ui.text_edit_singleline(&mut this.name);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Age:");
+                            ui.add(egui::DragValue::new(&mut this.age).range(0..=120));
+                        });
+                    });
+                } else {
                     ui.horizontal(|ui| {
                         ui.label("Name:");
                         ui.text_edit_singleline(&mut this.name);
-                    });
-                    ui.horizontal(|ui| {
+                        ui.separator();
                         ui.label("Age:");
                         ui.add(egui::DragValue::new(&mut this.age).range(0..=120));
                     });
-                });
-            } else {
-                ui.horizontal(|ui| {
-                    ui.label("Name:");
-                    ui.text_edit_singleline(&mut this.name);
-                    ui.separator();
-                    ui.label("Age:");
-                    ui.add(egui::DragValue::new(&mut this.age).range(0..=120));
-                });
-            }
-
-            ui.separator();
-
-            // Counter controls – buttons first for easy keyboard/screen reader focus
-            ui.horizontal_wrapped(|ui| {
-                if ui.button("Increment").clicked() {
-                    this.counter += 1;
                 }
-                if ui.button("Decrement").clicked() {
-                    this.counter -= 1;
+
+                ui.separator();
+
+                // Counter controls – buttons first for easy keyboard/screen reader focus
+                ui.horizontal_wrapped(|ui| {
+                    if ui.button("Increment").clicked() {
+                        this.counter += 1;
+                    }
+                    if ui.button("Decrement").clicked() {
+                        this.counter -= 1;
+                    }
+                    ui.label(format!("Counter: {}", this.counter));
+                });
+
+                ui.separator();
+                ui.label(format!(
+                    "Hello, {}! You are {} years old.",
+                    this.name, this.age
+                ));
+
+                ui.separator();
+
+                // Dialog demo
+                if ui.button("Show Dialog").clicked() {
+                    this.show_confirmation_dialog = true;
                 }
-                ui.label(format!("Counter: {}", this.counter));
-            });
-
-            ui.separator();
-            ui.label(format!(
-                "Hello, {}! You are {} years old.",
-                this.name, this.age
-            ));
-
-            ui.separator();
-
-            // Dialog demo
-            if ui.button("Show Dialog").clicked() {
-                this.show_confirmation_dialog = true;
-            }
-            if this.show_confirmation_dialog {
-                egui::Window::new("Confirmation")
-                    .collapsible(false)
-                    .show(ctx, |ui| {
-                        ui.label("Are you sure you want to continue?");
-                        ui.horizontal(|ui| {
-                            if ui.button("Yes").clicked() {
-                                this.show_confirmation_dialog = false;
-                            }
-                            if ui.button("No").clicked() {
-                                this.show_confirmation_dialog = false;
-                            }
+                if this.show_confirmation_dialog {
+                    egui::Window::new("Confirmation")
+                        .collapsible(false)
+                        .show(ctx, |ui| {
+                            ui.label("Are you sure you want to continue?");
+                            ui.horizontal(|ui| {
+                                if ui.button("Yes").clicked() {
+                                    this.show_confirmation_dialog = false;
+                                }
+                                if ui.button("No").clicked() {
+                                    this.show_confirmation_dialog = false;
+                                }
+                            });
                         });
-                    });
-            }
+                }
 
-            ui.separator();
+                ui.separator();
 
-            // Responsive card grid – adapts number of columns to width
-            let width = ui.available_width();
-            let cols = if width >= 900.0 {
-                3
-            } else if width >= 600.0 {
-                2
-            } else {
-                1
-            };
-            let mut columns = vec![Vec::<usize>::new(); cols];
-            let cards = 6usize; // a few demo cards
-            for i in 0..cards {
-                columns[i % cols].push(i);
-            }
-            ui.columns(cols, |uis| {
-                for (col_idx, col_ui) in uis.iter_mut().enumerate() {
-                    for card_idx in &columns[col_idx] {
-                        egui::Frame::group(col_ui.style())
-                            .stroke(col_ui.visuals().widgets.noninteractive.bg_stroke)
-                            .show(col_ui, |ui| {
-                                ui.vertical(|ui| {
-                                    ui.heading(format!("Card {}", card_idx + 1));
-                                    ui.label(
+                // Responsive card grid – adapts number of columns to width
+                let width = ui.available_width();
+                let cols = if width >= 900.0 {
+                    3
+                } else if width >= 600.0 {
+                    2
+                } else {
+                    1
+                };
+                ui.label(format!("Columns: {cols}"));
+                let mut columns = vec![Vec::<usize>::new(); cols];
+                let cards = 6usize; // a few demo cards
+                for i in 0..cards {
+                    columns[i % cols].push(i);
+                }
+                ui.columns(cols, |uis| {
+                    for (col_idx, col_ui) in uis.iter_mut().enumerate() {
+                        for card_idx in &columns[col_idx] {
+                            egui::Frame::group(col_ui.style())
+                                .stroke(col_ui.visuals().widgets.noninteractive.bg_stroke)
+                                .show(col_ui, |ui| {
+                                    ui.vertical(|ui| {
+                                        ui.heading(format!("Card {}", card_idx + 1));
+                                        ui.label(
                                         "This card wraps text and scales with the layout width.",
                                     );
-                                    ui.horizontal_wrapped(|ui| {
-                                        let _ = ui.small_button("Action").clicked();
-                                        let _ = ui.small_button("More").clicked();
-                                        let _ = ui.small_button("Details").clicked();
+                                        ui.horizontal_wrapped(|ui| {
+                                            let _ = ui.small_button("Action").clicked();
+                                            let _ = ui.small_button("More").clicked();
+                                            let _ = ui.small_button("Details").clicked();
+                                        });
                                     });
                                 });
-                            });
-                        col_ui.add_space(4.0);
+                            col_ui.add_space(4.0);
+                        }
                     }
-                }
-            });
-        };
+                });
+            };
 
         if is_stacked {
             // Narrow: stack Filters above Main inside a scrollable CentralPanel
@@ -162,10 +168,10 @@ impl eframe::App for DemoApp {
                 egui::ScrollArea::vertical()
                     .auto_shrink([false; 2])
                     .show(ui, |ui| {
-                        egui::Frame::group(ui.style()).show(ui, |ui| render_filters(ui));
+                        egui::Frame::group(ui.style()).show(ui, render_filters);
                         ui.add_space(6.0);
                         egui::Frame::group(ui.style())
-                            .show(ui, |ui| render_main_content(ui, self, ctx));
+                            .show(ui, |ui| render_main_content(ui, self, ctx, true));
                     });
             });
         } else {
@@ -175,13 +181,13 @@ impl eframe::App for DemoApp {
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical()
                         .auto_shrink([false; 2])
-                        .show(ui, |ui| render_filters(ui));
+                        .show(ui, render_filters);
                 });
 
             egui::CentralPanel::default().show(ctx, |ui| {
                 egui::ScrollArea::vertical()
                     .auto_shrink([false; 2])
-                    .show(ui, |ui| render_main_content(ui, self, ctx));
+                    .show(ui, |ui| render_main_content(ui, self, ctx, false));
             });
         }
     }
