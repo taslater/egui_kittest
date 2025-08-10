@@ -1,15 +1,10 @@
 use eframe::egui;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub enum ScalingMode {
+    #[default]
     Zoom,
     Style,
-}
-
-impl Default for ScalingMode {
-    fn default() -> Self {
-        ScalingMode::Zoom
-    }
 }
 
 #[derive(Default)]
@@ -21,6 +16,8 @@ pub struct DemoApp {
     pub zoom_factor: f32,
     pub scaling_mode: ScalingMode,
     pub base_style: Option<egui::Style>,
+    // Track the left panel width (in physical px) to inform stacking decisions
+    pub left_panel_width_px: Option<f32>,
 }
 
 impl DemoApp {
@@ -40,6 +37,7 @@ impl eframe::App for DemoApp {
     // Use physical width (points * ppp) for stable, DPI-independent breakpoints
     let unscaled_points = ctx.available_rect().width();
     let base_ppp = ctx.pixels_per_point();
+    // Treat pixels_per_point as a stable proxy for physical scaling captured before zoom changes
     let window_px = unscaled_points * base_ppp;
     // Adaptive scaling based directly on current window width
     let win_width = window_px;
@@ -118,11 +116,24 @@ impl eframe::App for DemoApp {
             });
         });
 
-    // Determine if we should stack content for very narrow windows
-    // Base this on the physical window width so breakpoints are stable across DPI & zoom
-    let stack_breakpoint = 600.0_f32; // below this, stack filters above content
-    let logical_width = window_px;
-    let is_stacked = logical_width < stack_breakpoint;
+    // Determine if we should stack content
+    // Criteria:
+    // - Always stack if the overall physical width is below 600 px (stable vs zoom/DPI)
+    // - Also stack if the predicted central (right) area becomes too narrow in logical points
+    //   due to a wide left panel. We compare central width in points so expectations at
+    //   specific window sizes (e.g., 820 pt) remain stable across pixels-per-point.
+    let stack_breakpoint = 600.0_f32; // overall window threshold (physical px)
+    let central_min_breakpoint_points = 460.0_f32; // minimum central width (in points) before stacking
+    let logical_width = window_px; // physical px for overall decisions
+    // Estimate previous left panel width in points (convert stored px back to points).
+    let default_left_points = 280.0; // default guess for left panel width (points)
+    let predicted_left_points = self
+        .left_panel_width_px
+        .map(|px| px / base_ppp)
+        .unwrap_or(default_left_points);
+    let predicted_central_points = (unscaled_points - predicted_left_points).max(0.0);
+    let is_stacked = logical_width < stack_breakpoint
+        || predicted_central_points < central_min_breakpoint_points;
 
         // Shared closures to render filters and main content to avoid duplication
         let render_filters = |ui: &mut egui::Ui| {
@@ -280,13 +291,16 @@ impl eframe::App for DemoApp {
             });
         } else {
             // Wide: show Filters in a resizable side panel and Main in the central area
-            egui::SidePanel::left("left_filters")
+            let side = egui::SidePanel::left("left_filters")
                 .resizable(true)
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical()
                         .auto_shrink([false; 2])
                         .show(ui, render_filters);
                 });
+            // Record actual left panel width (convert to physical px) for next-frame prediction
+            let left_points = side.response.rect.width();
+            self.left_panel_width_px = Some(left_points * base_ppp);
 
             egui::CentralPanel::default().show(ctx, |ui| {
                 egui::ScrollArea::vertical()

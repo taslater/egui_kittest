@@ -325,6 +325,24 @@ fn test_all_cards_visible_via_scroll_narrow() {
     }
 }
 
+// Stacking decision should consider central width (right panel) when the left panel is made very wide
+#[test]
+fn test_stacking_considers_central_width_when_left_is_wide() {
+    let mut app = egui_kittest_demo::DemoApp::new();
+    // Simulate a wide window but with a very wide left panel from a previous frame
+    // This should cause predicted central width to be small and trigger stacking
+    // Use physical px prediction; we don't know ppp here, so choose a large value
+    app.left_panel_width_px = Some(1000.0);
+    let harness = Harness::builder()
+        .with_size(egui::vec2(900.0, 600.0))
+        .build(|ctx| {
+            let mut frame = eframe::Frame::_new_kittest();
+            app.update(ctx, &mut frame);
+        });
+
+    harness.get_by_label("Layout: Stacked");
+}
+
 // Scaling: toggling the View -> Style-based mode should reflect in the semantic label
 #[test]
 fn test_view_menu_scaling_mode_toggle() {
